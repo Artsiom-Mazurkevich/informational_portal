@@ -22,6 +22,3 @@ app.get('/', async (req: Request, res: Response) => {
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`)
 })
-process.on('exit', (error) => {
-    console.log(error)
-})
