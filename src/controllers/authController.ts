@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { make_request_to_db } from '../utils/query_db.js'
+import { make_request_to_db, query_transaction_create_user } from '../utils/query_db.js'
 import bcrypt from 'bcrypt'
 import { generateToken } from '../utils/generateToken.js'
 import jwt, { JwtPayload } from 'jsonwebtoken'
@@ -21,7 +21,6 @@ class AuthController {
         try {
             // Проверяем, есть ли пользователь с таким email
             const result = await make_request_to_db('SELECT * FROM users WHERE email = $1', [email])
-
             if (result.rows.length > 0) {
                 return res.status(400).json({ message: 'User already exists' })
             }
@@ -29,10 +28,9 @@ class AuthController {
             // Хешируем пароль и сохраняем пользователя в БД
             const salt = await bcrypt.genSalt(7)
             const hashedPassword = await bcrypt.hash(password, salt)
-            const newUser = await make_request_to_db(
-                'INSERT INTO users (name, surname, email, password, role_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-                [name, surname, email, hashedPassword, role_id],
-            )
+
+            const newUser = await query_transaction_create_user(name, surname, email, hashedPassword, role_id)
+            console.log('NewUser: ', newUser)
 
             const token = generateToken(newUser.rows[0].id)
 
